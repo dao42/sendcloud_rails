@@ -24,7 +24,7 @@ module Sendcloud
       response = sendcloud_client.send_message options
       Rails.logger.info("from:#{options[:from]} to:#{options[:to]} res:#{response}")
       if response.code == 200
-        sendcloud_message_id = JSON.parse(response.to_str)["id"]
+        sendcloud_message_id = JSON.parse(response.to_str)['info']['emailIdList'].first
         rails_message.message_id = sendcloud_message_id
       end
       response
