@@ -1,4 +1,19 @@
 module Sendcloud
+  # 通用异常
+  Error = Class.new(StandardError)
+
+  # API 异常，比如返回失败状态码
+  class APIError < Error
+    attr_reader :code, :result
+
+    def initialize(code, result)
+      @code = code
+      @result = result
+
+      super("code:#{code}, res:#{result}")
+    end
+  end
+
   class Deliverer
 
     attr_accessor :settings
@@ -23,9 +38,15 @@ module Sendcloud
       options = build_sendcloud_message_for(rails_message)
       response = sendcloud_client.send_message options
       Rails.logger.info("from:#{options[:from]} to:#{options[:to]} res:#{response}")
+
       if response.code == 200
-        sendcloud_message_id = JSON.parse(response.to_str)['info']['emailIdList'].first
-        rails_message.message_id = sendcloud_message_id
+        response_h = JSON.parse(response.to_str)
+        if response_h['result']
+          sendcloud_message_id = response_h['info']['emailIdList'].first
+          rails_message.message_id = sendcloud_message_id
+        else
+          raise APIError.new(response_h['statusCode'], response_h)
+        end
       end
       response
     end
